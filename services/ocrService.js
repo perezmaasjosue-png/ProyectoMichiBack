@@ -70,13 +70,15 @@ async function analizarImagen(imageBuffer) {
   const umbralBorrosidad = parseInt(process.env.BLUR_THRESHOLD || '100', 10);
   const confianzaMinima = parseInt(process.env.OCR_MIN_CONFIDENCE || '70', 10);
 
-  const esBorrosa = nitidez < umbralBorrosidad;
+  const esBorrosaInicial = nitidez < umbralBorrosidad;
+  const usarOCR = !esBorrosaInicial && process.env.OCR_ENGINE !== 'none';
 
+  let esBorrosa = esBorrosaInicial;
   let texto = '';
   let confianza = 0;
   let campos = {};
 
-  if (!esBorrosa) {
+  if (usarOCR) {
     try {
       const resultado = await ejecutarOCR(imageBuffer);
       texto = resultado.texto;
@@ -96,9 +98,11 @@ async function analizarImagen(imageBuffer) {
     textoExtraido: texto,
     confianza,
     camposDetectados: campos,
-    esAutomatica: !esBorrosa && confianzaAceptable,
+    esAutomatica: usarOCR ? !esBorrosa && confianzaAceptable : false,
     motivo: esBorrosa
       ? 'Imagen borrosa o ilegible'
+      : !usarOCR
+      ? 'OCR desactivado (configuracion serverless)'
       : !confianzaAceptable
       ? `Confianza OCR baja (${confianza.toFixed(0)}%)`
       : 'Procesada automaticamente',

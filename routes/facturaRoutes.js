@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getAll,
   getById,
+  getImagen,
   getPendientes,
   getRechazadas,
   crearManual,
@@ -25,6 +26,7 @@ router.get('/rechazadas', getRechazadas);
 router.get('/cuadre', getCuadre);
 router.get('/cuadre/pdf', getCuadrePDF);
 
+router.get('/:id/imagen', getImagen);
 router.get('/:id', getById);
 
 router.post('/', autorizarRol('admin', 'operador'), crearManual);

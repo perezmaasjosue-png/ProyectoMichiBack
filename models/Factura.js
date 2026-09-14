@@ -10,6 +10,11 @@ const facturaSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    imagen: {
+      type: String,
+      select: false,
+      default: null,
+    },
     numeroFactura: {
       type: String,
       default: '',

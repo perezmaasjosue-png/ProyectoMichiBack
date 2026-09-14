@@ -37,6 +37,20 @@ const getById = async (req, res, next) => {
   }
 };
 
+const getImagen = async (req, res, next) => {
+  try {
+    const factura = await Factura.findById(req.params.id).select('+imagen');
+    if (!factura || !factura.imagen) {
+      return res.status(404).json({ message: 'Imagen no encontrada' });
+    }
+    const buffer = Buffer.from(factura.imagen, 'base64');
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getPendientes = async (req, res, next) => {
   try {
     const facturas = await Factura.find({ estado: 'pendiente' }).sort({ fechaRecepcion: 1 });
@@ -174,12 +188,10 @@ const uploadImagen = async (req, res, next) => {
     const imagenBuffer = req.file.buffer;
     const resultado = await analizarImagen(imagenBuffer);
 
-    const guardado = guardarImagen(imagenBuffer, req.body.jid || '', req.file.originalname);
+    const { imagenBase64 } = guardarImagen(imagenBuffer);
 
     const campos = resultado.camposDetectados;
     const datosFactura = {
-      imageUrl: guardado.imageUrl,
-      imageLocalPath: guardado.imageLocalPath,
       remitente: {
         nombre: req.body.remitente || '',
         numeroTelefono: req.body.numeroTelefono || '',
@@ -205,6 +217,9 @@ const uploadImagen = async (req, res, next) => {
     }
 
     const factura = await Factura.create(datosFactura);
+    factura.imagen = imagenBase64;
+    factura.imageUrl = `/api/facturas/${factura._id}/imagen`;
+    await factura.save();
 
     res.status(201).json({
       factura,
@@ -224,6 +239,7 @@ const uploadImagen = async (req, res, next) => {
 module.exports = {
   getAll,
   getById,
+  getImagen,
   getPendientes,
   getRechazadas,
   crearManual,

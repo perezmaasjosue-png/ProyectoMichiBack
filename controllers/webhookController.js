@@ -1,6 +1,5 @@
 const Factura = require('../models/Factura');
 const { analizarImagen } = require('../services/ocrService');
-const { guardarImagen } = require('../services/storageService');
 const { enviarConfirmacionMensaje } = require('../services/whatsappService');
 
 const recibirWhatsApp = async (req, res, next) => {
@@ -18,12 +17,8 @@ const recibirWhatsApp = async (req, res, next) => {
     const buffer = Buffer.from(imagenBase64, 'base64');
     const resultado = await analizarImagen(buffer);
 
-    const guardado = guardarImagen(buffer, jid || from || '', `wa_${Date.now()}.jpg`);
-
     const campos = resultado.camposDetectados;
     const datosFactura = {
-      imageUrl: guardado.imageUrl,
-      imageLocalPath: guardado.imageLocalPath,
       remitente: {
         nombre: nombre || '',
         numeroTelefono: from || '',
@@ -49,6 +44,9 @@ const recibirWhatsApp = async (req, res, next) => {
     }
 
     const factura = await Factura.create(datosFactura);
+    factura.imagen = imagenBase64;
+    factura.imageUrl = `/api/facturas/${factura._id}/imagen`;
+    await factura.save();
 
     const estadoMensaje =
       factura.estado === 'pendiente'
